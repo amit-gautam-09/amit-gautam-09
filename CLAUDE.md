@@ -80,11 +80,15 @@ The README itself is finished and live. History was squashed on 2026-10-27, so `
 all of it. These are waiting on Amit's decision; restate them at the start of a session and
 delete each line here once it's closed.
 
-1. The GitHub bio in the profile sidebar still has the old text. Update it to match the site
-   (`gh api -X PATCH user -f bio=...`), with Amit's wording.
+1. The GitHub bio in the profile sidebar still has the old text. Agreed new text is the site
+   headline: "GTM engineer building outbound systems and AI workflows that turn cold lists into
+   paying clients." First Amit must grant the `user` scope (`! gh auth refresh -h github.com -s user`),
+   then run `gh api -X PATCH user -f bio="..."`.
 2. Optional: GitHub Support could purge the orphaned commits `f090550` and `4123a83`. Only Amit
    can file this.
 3. Optional: a message to Aahil about the layout, which keeps his section order. Draft it on request.
 4. If the views pill stops updating, GitHub has disabled the scheduled workflow after 60 quiet
    days. Re-enable it under Actions.
-5. Amit to confirm ClickPost is fine with the outbound numbers being public.
+
+Closed: the public Outbound CRM runs on demo data and the real ClickPost CRM was never public
+(Amit, 2026-10-27).
