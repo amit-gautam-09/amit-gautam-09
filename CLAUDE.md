@@ -73,3 +73,18 @@ reliable for SVGs inside `<img>`.
 Push to `main`; the profile updates within a minute or two. There is no build step on GitHub
 except the views workflow. A profile repo only renders from its default branch, so work goes
 straight to `main`. Commit only when Amit asks.
+
+## Open items (as of 2026-10-27)
+
+The README itself is finished and live. History was squashed on 2026-10-27, so `ae0d63c` holds
+all of it. These are waiting on Amit's decision; restate them at the start of a session and
+delete each line here once it's closed.
+
+1. The GitHub bio in the profile sidebar still has the old text. Update it to match the site
+   (`gh api -X PATCH user -f bio=...`), with Amit's wording.
+2. Optional: GitHub Support could purge the orphaned commits `f090550` and `4123a83`. Only Amit
+   can file this.
+3. Optional: a message to Aahil about the layout, which keeps his section order. Draft it on request.
+4. If the views pill stops updating, GitHub has disabled the scheduled workflow after 60 quiet
+   days. Re-enable it under Actions.
+5. Amit to confirm ClickPost is fine with the outbound numbers being public.
