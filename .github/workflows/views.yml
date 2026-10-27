@@ -1,0 +1,40 @@
+name: Refresh view count
+
+# Every visit to the profile loads an invisible komarev counter (see README.md). Four times a
+# day this reads that count and redraws the "profile views" pill to match the other buttons.
+
+on:
+  schedule:
+    - cron: "41 1,7,13,19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: views
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Install fontTools
+        run: python -m pip install --quiet fonttools
+      - name: Redraw the pill
+        run: python scripts/build.py --views
+      - name: Commit if the count moved
+        run: |
+          if git diff --quiet -- scripts/views.txt; then
+            echo "No new views."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet -m "Refresh profile view count [skip ci]" -- scripts/views.txt assets/btn-views-light.svg assets/btn-views-dark.svg
+          git push --quiet
