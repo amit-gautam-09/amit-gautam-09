@@ -41,11 +41,21 @@ def back_to_back(start, count, every):
 
 # -------------------------------------------------------------------- hero
 
-FUNNEL = [("prospects", 11_000), ("replies", 122), ("positive", 36), ("demos", 27), ("co-closed", 18)]
+# The profile is shared by recruiters for product and for GTM roles, so it leads with what both
+# résumés lead with: the founder years and the ClickPost results, side by side. A value of None
+# makes the line a section header.
+SHIPPED = [
+    ("# distance connect", None),
+    ("students", "5,000+"),
+    ("activation", "34% -> 52%"),
+    ("# clickpost", None),
+    ("demos booked", "27"),
+    ("paying clients", "18"),
+]
 
-HERO_ALT = ("Amit Gautam, New Delhi, India. GTM engineer building outbound systems and AI workflows "
-            "that turn cold lists into paying clients. A funnel.log window counts down this year's "
-            "outbound: 11,000 prospects, 122 replies, 36 positive, 27 demos, 18 clients co-closed.")
+HERO_ALT = ("Amit Gautam, New Delhi, India. Ex-founder who builds products, growth systems and the "
+            "software behind them. A shipped.log window lists results: at Distance Connect, 5,000+ "
+            "students and activation from 34% to 52%; at ClickPost, 27 demos booked and 18 paying clients.")
 
 
 def hero(theme):
@@ -69,8 +79,8 @@ def hero(theme):
                   ease=EASE_OUT, delay=0.1 + 0.14 * i)
 
     # The headline from the site; its middle line fades up, then a highlighter runs under it.
-    lead, middle, tail = ("GTM engineer building", "outbound systems and AI workflows",
-                          "that turn cold lists into paying clients.")
+    lead, middle, tail = ("Ex-founder who builds", "products, growth systems",
+                          "and the software behind them.")
     fs = min(fit([lead, tail], column, start=22), fit([middle], column, start=22, weight=700))
     c.text(left, 294, lead, size=fs)
     marker = c.add("rect", x=left, y=329, width=float(measure(middle, fs, 700)), height=5, rx=1.5,
@@ -83,30 +93,29 @@ def hero(theme):
               ease=EASE_OUT, delay=0.7)
     c.text(left, 354, tail, size=fs)
 
-    # funnel.log: each stage arrives, then its bar fills. Bars are log-scaled, or the last four
-    # would vanish next to the first.
+    # shipped.log: each line arrives in turn; the last result lands on the accent.
     wx, wy, ww, wh = 500, 92, 296, 250
-    c.window(wx, wy, ww, wh, "funnel.log")
-    c.text(wx + 20, wy + 58, "clickpost outbound, 2026", size=11, mono=True, ink="ink3")
-    bar_x, bar_full = wx + 104, 108
-    scale = math.log10(FUNNEL[0][1])
-    for i, (stage, count) in enumerate(FUNNEL):
-        y, at = wy + 92 + 27 * i, 0.9 + 0.2 * i
-        final = i == len(FUNNEL) - 1
+    c.window(wx, wy, ww, wh, "shipped.log")
+    for i, (label, value) in enumerate(SHIPPED):
+        y, at = wy + 66 + 25 * i, 0.9 + 0.18 * i
+        final = i == len(SHIPPED) - 1
         row = c.group()
-        c.text(wx + 20, y, stage, size=12, mono=True, ink="ink" if final else "ink2", parent=row)
-        c.text(wx + ww - 20, y, f"{count:,}", size=12, mono=True, anchor="end", parent=row)
+        if value is None:
+            c.text(wx + 20, y, label, size=11, mono=True, ink="ink3", parent=row)
+        else:
+            c.text(wx + 32, y, label, size=12, mono=True, ink="ink" if final else "ink2", parent=row)
+            if final:
+                w = len(value) * mono_width(12)
+                c.add("rect", row, x=float(wx + ww - 26 - w), y=y - 13, width=float(w + 12), height=18, rx=4,
+                      fill=c.colour("accent"), stroke=c.colour("line"), stroke_width=1.5)
+            c.text(wx + ww - 20, y, value, size=12, mono=True, ink="on_accent" if final else "ink", anchor="end",
+                   parent=row)
         c.animate(row, "from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}", 0.4,
                   ease=EASE_OUT, delay=at)
-        bar = c.add("rect", x=bar_x, y=y - 10, width=float(max(10, bar_full * math.log10(count) / scale)), height=11,
-                    rx=2.5, fill=c.colour("accent" if final else "sunk"), stroke=c.colour("line"), stroke_width=1.5)
-        c.animate(bar, "from{transform:scaleX(0)}to{transform:scaleX(1)}", 0.6, ease=EASE_OUT, delay=at + 0.15,
-                  origin="left")
 
-    # A prompt waiting on the next follow-up.
     py = wy + wh - 24
-    prompt = "> next: follow up"
-    c.runs(wx + 20, py, [("> ", "ink3"), ("next: follow up", "ink2")], size=12)
+    prompt = "> ship it"
+    c.runs(wx + 20, py, [("> ", "ink3"), ("ship it", "ink2")], size=12)
     cursor = c.add("rect", x=float(wx + 22 + len(prompt) * mono_width(12)), y=py - 10, width=float(mono_width(12)),
                    height=13, fill=c.colour("ink"))
     c.animate(cursor, "0%{opacity:1}50%{opacity:0}100%{opacity:0}", 1.1, ease="steps(1,end)", loop=True, deco=True)
@@ -115,7 +124,10 @@ def hero(theme):
 
 # ----------------------------------------------------------------- buttons
 
-BUTTONS = {"site": "Portfolio", "resume": "Résumé PDF ↓", "linkedin": "LinkedIn ↗", "email": "Email ↗"}
+# No portfolio or résumé button: recruiters for product roles and for GTM roles each arrive with
+# their own résumé, which links the right site. The profile links to neither, so it can't send
+# anyone to the wrong one.
+BUTTONS = {"linkedin": "LinkedIn ↗", "email": "Email ↗"}
 
 
 def pill(c, width):
@@ -124,17 +136,10 @@ def pill(c, width):
 
 def button(theme, key):
     label = BUTTONS[key]
-    width = 22 + measure(label, 15, 500) + (52 if key == "site" else 22)
+    width = 22 + measure(label, 15, 500) + 22
     c = Card(math.ceil(width + 8), 56, theme, label.rstrip(" ↓↗"), freeze=1)
     pill(c, width)
     c.text(22, 31, label, size=15, weight=500)
-    if key == "site":
-        cx = width - 15 - 6
-        c.add("circle", cx=float(cx), cy=26, r=15, fill=c.colour("accent"), stroke=c.colour("line"), stroke_width=1.5)
-        arrow = c.group()
-        c.text(cx, 31.5, "→", size=16, weight=700, ink="on_accent", anchor="middle", parent=arrow)
-        c.animate(arrow, "0%,100%{transform:translateX(0)}50%{transform:translateX(2.5px)}", 1.6,
-                  ease="ease-in-out", loop=True, deco=True)
     return c.svg()
 
 
@@ -175,12 +180,11 @@ def refresh_views():
 
 STATS = [
     ("STUDENTS SCALED", 5000, "{:,.0f}", "+", "Distance Connect, as founder"),
-    ("POSITIVE-REPLY RATE", 53.3, "{:.1f}%", "", "up from 8.3%, after a copy rewrite"),
-    ("WEBHOOK EVENTS", 19.7, "{:.1f}K", "+", "handled by the outbound CRM"),
+    ("ACTIVATION", 52, "{:.0f}%", "", "up from 34%, after a redesign"),
+    ("PAYING CLIENTS", 18, "{:.0f}", "", "co-closed at ClickPost"),
 ]
-STATS_ALT = ("By the numbers: 5,000+ students scaled at Distance Connect, as founder. A 53.3% "
-             "positive-reply rate, up from 8.3% after a copy rewrite. 19.7K+ webhook events handled "
-             "by the outbound CRM.")
+STATS_ALT = ("By the numbers: 5,000+ students scaled at Distance Connect, as founder. Activation at "
+             "52%, up from 34% after an onboarding redesign. 18 paying clients co-closed at ClickPost.")
 
 
 def stats(theme):
@@ -202,11 +206,9 @@ def stats(theme):
 # -------------------------------------------------------------------- work
 
 def work_head(theme):
-    c = Card(WIDE, 96, theme, "Selected work: four projects, each with a full write-up on amitgautamwork.com",
-             freeze=1)
+    c = Card(WIDE, 96, theme, "Selected work: three projects", freeze=1)
     c.eyebrow(4, 30, "SELECTED WORK")
     c.text(4, 70, "Selected projects", size=30, weight=700, track=-0.015)
-    c.text(WIDE - 4, 70, "write-ups on amitgautamwork.com", size=13, ink="ink2", anchor="end")
     c.add("line", x1=4, y1=94, x2=WIDE - 4, y2=94, stroke=c.colour("line"), stroke_width=2)
     return c.svg()
 
@@ -216,8 +218,11 @@ TICK_ROWS = (62, 84, 106)
 CYCLE, CLEAR = 10.0, 9.6             # tickers loop every CYCLE seconds and wipe at CLEAR
 
 
-def project_card(theme, number, name, blurb, badge, meta, alt, freeze):
-    """The left two thirds of a project card. Returns the card for its ticker to be added."""
+def project_card(theme, number, name, blurb, badge, meta, alt, freeze, *, arrow=True):
+    """The left two thirds of a project card. Returns the card for its ticker to be added.
+
+    `arrow` draws the ↗ that says the card is a link; leave it off for a card the README doesn't link.
+    """
     c = Card(WIDE, 142, theme, alt, freeze)
     c.block(2, 2, WIDE - 12, 128, drop=5)
     c.add("rect", x=24, y=24, width=34, height=24, rx=6, fill=c.colour("sunk"), stroke=c.colour("line"),
@@ -233,10 +238,11 @@ def project_card(theme, number, name, blurb, badge, meta, alt, freeze):
     c.text(badge_x + 10, 40.6, badge, size=9.5, weight=700, ink="on_accent", track=0.08)
     c.text(74, 72, blurb, size=14, ink="ink2")
     c.text(74, 102, "  ·  ".join(meta), size=10, weight=500, ink="ink3", track=0.08)
-    arrow = c.group()
-    c.text(WIDE - 30, 42, "↗", size=20, weight=500, anchor="end", parent=arrow)
-    c.animate(arrow, "0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-2px)}", 2.4,
-              ease="ease-in-out", loop=True, deco=True)
+    if arrow:
+        mark = c.group()
+        c.text(WIDE - 30, 42, "↗", size=20, weight=500, anchor="end", parent=mark)
+        c.animate(mark, "0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-2px)}", 2.4,
+                  ease="ease-in-out", loop=True, deco=True)
     return c
 
 
@@ -250,10 +256,10 @@ def tick(c, row, parts, at, column=0):
 
 
 def outbound_crm(theme):
-    c = project_card(theme, "01", "Outbound CRM", "One record per prospect, across email and LinkedIn",
+    c = project_card(theme, "02", "Outbound CRM", "One record per prospect, across email and LinkedIn",
                      "USED DAILY · 5-PERSON TEAM", ["2026", "NEXT.JS", "TYPESCRIPT", "POSTGRESQL", "MCP"],
-                     "01 Outbound CRM: one record per prospect, across email and LinkedIn. Used daily by a "
-                     "5-person GTM team. Replies from Instantly and HeyReach merge into one record with an "
+                     "02 Outbound CRM: one record per prospect, across email and LinkedIn. Used daily by a "
+                     "5-person team. Replies from Instantly and HeyReach merge into one record with an "
                      "owner.", freeze=5)
     tick(c, 0, [("in  ", "ink3"), ("instantly", "ink"), ("  reply", "ink2")], 0.3)
     tick(c, 1, [("in  ", "ink3"), ("heyreach", "ink"), ("   reply", "ink2")], 1.3)
@@ -261,44 +267,23 @@ def outbound_crm(theme):
     return c.svg()
 
 
-def shopflo(theme):
-    c = project_card(theme, "02", "Shopflo lead pipeline", "A zero-cost replacement for a $250/month data tool",
-                     "5 OF 8 CONVERTED", ["2026", "CLICKPOST", "INSTANTLY"],
-                     "02 Shopflo lead pipeline: a zero-cost replacement for a $250/month data tool. 1,610 "
-                     "checkout stores; 8 positive opportunities, 5 converted to paying clients.", freeze=6)
-    cw = mono_width(TICK_SIZE)
-    tick(c, 0, [("cost    ", "ink3"), ("$250/mo", "ink2")], 0.2)
-    strike = c.add("rect", x=float(TICK_X + 8 * cw - 1), y=TICK_ROWS[0] - 5, width=float(7 * cw + 2), height=1.6,
-                   fill=c.colour("hot"))
-    c.show(strike, [(1.0, CLEAR)], CYCLE)
-    tick(c, 0, [("$0", "ink")], 1.4, column=17)
-    tick(c, 1, [("stores", "ink3")], 2.0)
-    counts = [f"{v:,.0f}" for v in ease_out_steps(1610, 8)]
-    counter = c.flipbook(TICK_X + 8 * cw, TICK_ROWS[1], counts, back_to_back(2.1, len(counts), 0.1), CYCLE,
-                         size=TICK_SIZE, mono=True)
-    c.show(counter, [(2.1, CLEAR)], CYCLE)
-    tick(c, 2, [("opps    ", "ink3"), ("8", "ink"), ("   won ", "ink3"), ("5", "hot")], 3.4)
-    return c.svg()
-
-
-def eu_offer(theme):
-    c = project_card(theme, "03", "EU withdrawal-rights offer", "A compliance offer built from the directive itself",
-                     "3 QUALIFIED OPPS", ["2026", "CLICKPOST", "RESEARCH"],
-                     "03 EU withdrawal-rights offer: a compliance offer built from EU Directive 2023/2673 "
-                     "itself. 13,110 emails to 3,366 merchants; 36 replies, 3 qualified opportunities.", freeze=7)
-    line, done = c.typewriter(TICK_X, TICK_ROWS[0], "$ read directive 2023/2673", 0.2, CYCLE, cps=18,
-                              size=TICK_SIZE)
-    c.show(line, [(0.0, CLEAR)], CYCLE)
-    tick(c, 1, [("sent  ", "ink3"), ("13,110", "ink"), (" to ", "ink3"), ("3,366", "ink"), (" merchants", "ink2")],
-         done + 0.5)
-    tick(c, 2, [("reply ", "ink3"), ("36", "ink"), ("   opps ", "ink3"), ("3", "hot")], done + 1.5)
+def clickpost(theme):
+    # Not linked from the README, so no ↗: the facts live on both résumés, not on a page of their own.
+    c = project_card(theme, "03", "ClickPost funnel", "Outbound for a Shopify app, from first list to paid",
+                     "18 PAYING CLIENTS", ["2026", "CLICKPOST", "INSTANTLY", "HEYREACH"],
+                     "03 ClickPost funnel: outbound for ClickPost's Shopify Order Editing app, from first list "
+                     "to paid conversion. About 11,000 prospects, 122 replies, 36 positive, 27 demos booked and "
+                     "18 paying clients, co-closed with an Account Executive.", freeze=6, arrow=False)
+    tick(c, 0, [("prospects ", "ink3"), ("~11,000", "ink")], 0.3)
+    tick(c, 1, [("replies   ", "ink3"), ("122", "ink"), ("  positive ", "ink3"), ("36", "ink")], 1.3)
+    tick(c, 2, [("demos     ", "ink3"), ("27", "ink"), ("   clients ", "ink3"), ("18", "hot")], 2.4)
     return c.svg()
 
 
 def distance_connect(theme):
-    c = project_card(theme, "04", "Distance Connect", "Student–mentor EdTech, from zero to 5,000+ students",
-                     "FOUNDER & CEO", ["2024", "PRODUCT", "PYTHON"],
-                     "04 Distance Connect: student-mentor EdTech I founded and ran as CEO, from zero to "
+    c = project_card(theme, "01", "Distance Connect", "Student–mentor EdTech, from zero to 5,000+ students",
+                     "FOUNDER & CEO", ["2024 – 2026", "EDTECH", "8-MEMBER TEAM"],
+                     "01 Distance Connect: student-mentor EdTech I founded and ran as CEO, from zero to "
                      "5,000+ students. Activation rose from 34% to 52%, 7-day retention from 42% to 58%.", freeze=7)
     cw = mono_width(TICK_SIZE)
     tick(c, 0, [("users", "ink3")], 0.2)
@@ -315,13 +300,15 @@ def distance_connect(theme):
 
 # ------------------------------------------------------------------- stack
 
-# The site's toolbox (content/data/stack.json), in its own groups.
+# Both sites' toolboxes merged (content/data/stack.json in each repo), so neither track's
+# skills are missing here.
 TOOLBOX = [
-    ("GTM tools", [("Instantly", "instantly.png"), ("HeyReach", "heyreach.png"), ("Clay", "clay.png"),
-                   ("Apollo.io", "apollo.png"), ("Apify", "apify.png"), ("Bitscale", "bitscale.png"),
-                   ("Storeleads", "storeleads.png"), ("PhantomBuster", "phantombuster.png"),
-                   ("OpenAI Ads", "openai.png"), ("Zoho Campaigns", "zoho.svg"), ("n8n", "n8n.svg"),
-                   ("Zapier", "zapier.svg")]),
+    ("Product & growth", [("User Discovery Interviews", "lucide-messages-square.svg"),
+                          ("Roadmapping", "lucide-map.svg"), ("Funnel & Cohort Analysis", "lucide-funnel.svg"),
+                          ("Onboarding & Activation", "lucide-user-check.svg"), ("Agile Sprints", "lucide-kanban.svg"),
+                          ("ICP Building", "lucide-target.svg"), ("Lead Generation", "lucide-magnet.svg"),
+                          ("Positioning", "lucide-megaphone.svg"),
+                          ("Cross-Functional Collaboration", "lucide-users.svg")]),
     ("Data & analytics", [("SQL", "lucide-database.svg"), ("Python", "python-original.svg"), ("Excel", "excel.png"),
                           ("Power BI", "powerbi.png"), ("Google Analytics", "googleanalytics.svg"),
                           ("Search Console", "googlesearchconsole.svg"), ("Mixpanel", "mixpanel.svg"),
@@ -332,13 +319,14 @@ TOOLBOX = [
                          ("REST APIs", "lucide-braces.svg"), ("Webhooks", "lucide-webhook.svg"),
                          ("MCP", "modelcontextprotocol.svg"), ("Claude Code", "claudecode.svg"),
                          ("Prompt Engineering", "lucide-wand-sparkles.svg")]),
-    ("Sales & GTM", [("ICP Building", "lucide-target.svg"), ("Lead Generation", "lucide-magnet.svg"),
-                     ("Lead Scoring", "lucide-gauge.svg"), ("Positioning & Messaging", "lucide-megaphone.svg"),
-                     ("Cross-Functional Collaboration", "lucide-users.svg")]),
+    ("Tools", [("Instantly", "instantly.png"), ("HeyReach", "heyreach.png"), ("Clay", "clay.png"),
+               ("Apollo.io", "apollo.png"), ("Apify", "apify.png"), ("PhantomBuster", "phantombuster.png"),
+               ("n8n", "n8n.svg"), ("Zapier", "zapier.svg"), ("Jira", "jira.svg"), ("Notion", "notion.svg"),
+               ("Confluence", "confluence.svg")]),
 ]
 # Near-black marks, repainted in the ink colour on the dark theme so they stay visible.
-INK_MARKS = {"nextjs-original.svg", "vercel-original.svg", "modelcontextprotocol.svg", "openai.png", "bitscale.png",
-             "similarweb.svg"}
+INK_MARKS = {"nextjs-original.svg", "vercel-original.svg", "modelcontextprotocol.svg", "similarweb.svg",
+             "notion.svg", "confluence.svg"}
 
 CHAI = ["  .------.", "  |      |]", "  \\      /", "   `----'"]
 STEAM = [("  ( (", "   ) )"), ("   ) )", "  ( ("), ("  ) (", "   ( )")]
@@ -366,11 +354,11 @@ def lay_out_toolbox(left, right, top):
 def stack(theme):
     labels, chips, bottom = lay_out_toolbox(40, WIDE - 48, 122)
     every = ", ".join(name for _, tools in TOOLBOX for name, _ in tools)
-    c = Card(WIDE, math.ceil(bottom + 44), theme, f"What I build with: {every}. A cup of chai steams in the corner.",
+    c = Card(WIDE, math.ceil(bottom + 44), theme, f"What I work with: {every}. A cup of chai steams in the corner.",
              freeze=5)
     c.floor(2, 2, WIDE - 10, c.height - 10)
     c.eyebrow(40, 54, "TOOLBOX")
-    c.text(40, 88, "What I build with", size=28, weight=700, track=-0.01)
+    c.text(40, 88, "What I work with", size=28, weight=700, track=-0.01)
     for label, y in labels:
         c.text(40, y, label, size=10.5, weight=500, ink="ink2", track=0.12)
     for n, (x, y, w, name, logo) in enumerate(chips):
@@ -402,13 +390,13 @@ ENVELOPE = [" ______ ", "|\\    /|", "|_\\__/_|"]
 
 
 def footer(theme):
-    c = Card(WIDE, 222, theme, "Let's build something. Happy to talk GTM engineering, outbound systems and AI "
-             "workflows; email is the fastest way to reach me. An envelope flies into an inbox and a reply pops "
-             "out.", freeze=7.6)
+    c = Card(WIDE, 222, theme, "Let's build something. Happy to talk product, growth and building with AI; "
+             "email is the fastest way to reach me. An envelope flies into an inbox and a reply pops out.",
+             freeze=7.6)
     c.block(2, 2, WIDE - 10, 212, fill="band")
     c.eyebrow(40, 54, "CONTACT")
     c.text(40, 96, "Let’s build something.", size=34, weight=700, track=-0.02)
-    c.text(40, 124, "Happy to talk GTM engineering, outbound systems and AI workflows. Email is fastest.",
+    c.text(40, 124, "Happy to talk product, growth and building with AI. Email is fastest.",
            size=14, ink="ink2")
 
     size, leading = 13, 14
@@ -434,7 +422,7 @@ def footer(theme):
     c.animate(wobble, "0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}", 0.5, ease="ease-in-out",
               loop=True, deco=True)
 
-    reply = "+1 positive reply"
+    reply = "+1 reply"
     bubble = c.group()
     centre, base = tray_x + tray_w / 2, ground - 52
     bw = len(reply) * mono_width(12) + 20
@@ -448,9 +436,8 @@ def footer(theme):
 # -------------------------------------------------------------------- main
 
 CARDS = {
-    "hero": hero, "stats": stats, "work-head": work_head, "work-outbound-crm": outbound_crm,
-    "work-shopflo": shopflo, "work-eu-offer": eu_offer, "work-distance-connect": distance_connect,
-    "stack": stack, "footer": footer,
+    "hero": hero, "stats": stats, "work-head": work_head, "work-distance-connect": distance_connect,
+    "work-outbound-crm": outbound_crm, "work-clickpost": clickpost, "stack": stack, "footer": footer,
 }
 
 
